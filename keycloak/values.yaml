@@ -1,0 +1,74 @@
+keycloak:
+  replicas: 1
+
+  image:
+    repository: jboss/keycloak
+    tag: 7.0.0
+    pullSecrets:
+      - "regcred"
+
+  ## Username for the initial Keycloak admin user
+  username: admin
+
+  ## Password for the initial Keycloak admin user. Applicable only if existingSecret is not set.
+  ## If not set, a random 10 characters password will be used
+  password: "1234"
+
+
+
+  resources:
+    limits:
+      memory: "512Mi"
+    requests:
+      memory: "512Mi"
+
+
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+
+    ## List of hosts for the ingress
+    hosts: ["auth.jhfdev.com"]
+    path: "/"
+    tls: []
+
+  ## Persistence configuration
+  persistence:
+    # If true, the Postgres chart is deployed
+    deployPostgres: false
+
+    dbName: keycloak_db
+    dbHost: keycloak-db
+    dbPort: 5432
+    dbUser: keycloak
+
+    dbVendor: "postgres"
+
+    # Only used if no existing secret is specified. In this case a new secret is created
+    dbPassword: "keycloak"
+
+  extraInitContainers: |
+    - name: theme-provider
+      image: "djhofmann/keycloak-themes:1.0-4"
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+      args:
+        - -c
+        - |
+          echo "Copying theme..."
+          cp -R /themes/* /theme
+      volumeMounts:
+        - name: theme
+          mountPath: /theme
+  extraVolumeMounts:  |
+    - name: theme
+      mountPath: /opt/jboss/keycloak/themes/
+  extraVolumes: |
+    - name: theme
+      emptyDir: {}
+
+
+test:
+  enabled: false
