@@ -31,14 +31,10 @@ spec:
             - name: postgres
               containerPort: 5432
               protocol: TCP
-          #livenessProbe:
-          #  httpGet:
-          #    path: /
-          #    port: 5432
-          #readinessProbe:
-          #  httpGet:
-          #    path: /
-          #    port: 5432
+          volumeMounts:
+            - mountPath: "/var/lib/postgresql/data"
+              name: do-pvc
+              subPath: postgres
           env:
             - name: POSTGRES_DB
               value: "{{ .Values.db.database }}"
@@ -48,6 +44,17 @@ spec:
               value: "{{ .Values.db.password }}"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      #initContainers:
+      #  - name: pg-init
+      #    image: busybox
+      #    command: ["rm","-rf","data/data"]
+      #    volumeMounts:
+      #      - mountPath: "/data"
+      #        name: do-pvc
+      volumes:
+        - name: do-pvc
+          persistentVolumeClaim:
+            claimName: csi-pvc
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
